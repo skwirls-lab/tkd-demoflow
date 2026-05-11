@@ -23,21 +23,28 @@ export default function LiveRoutinePage() {
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-advance segments based on time IF playing and Auto-Advance is enabled
+  // Duration-based Auto-advance
   useEffect(() => {
     if (isPlaying && autoAdvance && routine && routine.events.length > 0) {
-      const sortedEvents = [...routine.events].sort((a, b) => a.timestamp - b.timestamp);
+      const currentEvent = routine.events[activeSegmentIndex];
+      const duration = currentEvent.timestamp; // The input is the DURATION of the segment
       
-      // Find the LATEST segment that should be active based on current time
-      let targetIndex = -1;
-      for (let i = 0; i < sortedEvents.length; i++) {
-        if (sortedEvents[i].timestamp <= currentTime) {
-          targetIndex = routine.events.findIndex(e => e === sortedEvents[i]);
-        }
-      }
+      if (duration > 0) {
+        // Calculate the absolute start time of the CURRENT segment by summing previous durations
+        const absoluteStartTime = routine.events
+          .slice(0, activeSegmentIndex)
+          .reduce((sum, e) => sum + e.timestamp, 0);
+          
+        const exitTime = absoluteStartTime + duration;
 
-      if (targetIndex !== -1 && targetIndex !== activeSegmentIndex) {
-        setActiveSegmentIndex(targetIndex);
+        if (currentTime >= exitTime) {
+          const nextIndex = activeSegmentIndex + 1;
+          if (nextIndex < routine.events.length) {
+            setActiveSegmentIndex(nextIndex);
+          } else {
+             setIsPlaying(false); // End of routine
+          }
+        }
       }
     }
   }, [currentTime, isPlaying, autoAdvance, routine, activeSegmentIndex]);
@@ -122,15 +129,15 @@ export default function LiveRoutinePage() {
   // Manual Navigation
   const jumpToSegment = (index: number) => {
     if (!routine || index < 0 || index >= routine.events.length) return;
-    
-    // Update the index explicitly
     setActiveSegmentIndex(index);
     
-    // Set current time to that segment's timestamp to keep clock in sync
-    const targetTime = routine.events[index].timestamp;
+    // Calculate the absolute time to jump to by summing all previous durations
+    const targetTime = routine.events
+      .slice(0, index)
+      .reduce((sum, e) => sum + e.timestamp, 0);
+      
     setCurrentTime(targetTime);
     
-    // Optionally sync audio
     if (syncAudio && routine.audioUrl) {
       setSeekTo(targetTime);
       setTimeout(() => setSeekTo(undefined), 50);
@@ -221,14 +228,12 @@ export default function LiveRoutinePage() {
         <div className="max-w-[1800px] mx-auto flex flex-col gap-4 md:gap-8">
           
           <div className="flex flex-col gap-3">
-             {/* Front Label (OUTSIDE GRID) */}
             <div className="flex items-center justify-center gap-4 px-12">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-belt-red/20" />
               <span className="text-[8px] md:text-[10px] font-bold text-belt-red uppercase tracking-[0.4em] italic opacity-60">Audience / Front</span>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-belt-red/20" />
             </div>
 
-            {/* Mat (FLUID DOTS) */}
             <div className="w-full">
               <div className="card w-full aspect-[3/1] relative bg-[#0a0a0a] border-2 md:border-[8px] border-belt-gray/40 overflow-hidden shadow-2xl rounded-xl md:rounded-3xl">
                 <div className="absolute inset-0 pointer-events-none">
@@ -236,7 +241,6 @@ export default function LiveRoutinePage() {
                   <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/5 -translate-x-1/2" />
                 </div>
 
-                {/* Members (PERCENTAGE SCALED) */}
                 {currentEvent?.formations && Object.entries(currentEvent.formations).map(([memberId, pos]) => {
                   const member = allMembers.find(m => m.id === memberId);
                   return (
@@ -274,7 +278,6 @@ export default function LiveRoutinePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
-            {/* LEFT: Notes */}
             <div className="lg:col-span-8 space-y-6 md:space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-3">
@@ -324,7 +327,6 @@ export default function LiveRoutinePage() {
               </div>
             </div>
 
-            {/* RIGHT: Status */}
             <div className="lg:col-span-4 space-y-6 md:space-y-8">
               <div className={`card p-6 md:p-8 border-2 transition-all duration-500 ${currentEvent ? "border-belt-red bg-belt-red/5" : "border-belt-gray"}`}>
                 <p className="text-[8px] md:text-[10px] font-black text-belt-gold uppercase tracking-[0.2em] mb-4 md:mb-6">Active Segment</p>
@@ -334,9 +336,6 @@ export default function LiveRoutinePage() {
                 <div className="mt-4 md:mt-6 flex flex-wrap gap-2">
                    <span className="bg-belt-red text-white text-[8px] md:text-[10px] font-black px-2 md:px-3 py-1 rounded-full uppercase tracking-widest">
                     {currentEvent?.type || "STBY"}
-                  </span>
-                  <span className="bg-belt-gray text-belt-gold text-[8px] md:text-[10px] font-black px-2 md:px-3 py-1 rounded-full uppercase tracking-widest border border-belt-gold/20">
-                    T+ {currentEvent?.timestamp.toFixed(1)}s
                   </span>
                 </div>
               </div>
@@ -391,7 +390,7 @@ export default function LiveRoutinePage() {
                     >
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] md:text-xs font-black uppercase tracking-wider">{event.label}</span>
-                        <span className="font-mono text-[8px] md:text-[10px] font-bold text-belt-gold">{event.timestamp.toFixed(1)}s</span>
+                        <span className="font-mono text-[8px] md:text-[10px] font-bold text-belt-gold">{event.timestamp.toFixed(1)}s len</span>
                       </div>
                     </button>
                   ))}
