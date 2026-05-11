@@ -9,7 +9,9 @@ import {
   Routine, 
   RoutineEvent, 
   getAllMembers, 
-  Member 
+  Member,
+  getAllAudioTracks,
+  AudioTrack
 } from "@/lib/firebase/firestore";
 import FormationDesigner from "@/components/stage/FormationDesigner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,15 +33,22 @@ export default function RoutineBuilderPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
+  const [libraryTracks, setLibraryTracks] = useState<AudioTrack[]>([]);
 
   useEffect(() => {
     loadMembers();
+    loadLibrary();
     if (editId) {
       loadRoutine();
     } else {
       setLoading(false);
     }
   }, [editId]);
+
+  const loadLibrary = async () => {
+    const tracks = await getAllAudioTracks();
+    setLibraryTracks(tracks);
+  };
 
   const loadMembers = async () => {
     const data = await getAllMembers();
@@ -150,25 +159,16 @@ export default function RoutineBuilderPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black text-belt-white/30 uppercase tracking-widest">Main Audio Track (Optional)</label>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="file"
-                      accept="audio/mp3, audio/wav, audio/m4a"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const url = await uploadAudio(file, name || "routine");
-                          setAudioUrl(url);
-                        } catch (error) {
-                          console.error("Audio upload failed:", error);
-                          alert("Failed to upload audio.");
-                        }
-                      }}
-                      className="block w-full text-xs text-belt-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-belt-red file:text-white hover:file:bg-red-600 transition-all cursor-pointer"
-                    />
-                  </div>
-                  {audioUrl && <p className="text-[10px] text-green-500 font-bold">✓ Audio attached</p>}
+                  <select
+                    value={audioUrl}
+                    onChange={(e) => setAudioUrl(e.target.value)}
+                    className="input-field text-xs uppercase cursor-pointer"
+                  >
+                    <option value="">-- No Audio / Silent --</option>
+                    {libraryTracks.map(t => (
+                      <option key={t.id} value={t.url}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -294,29 +294,17 @@ export default function RoutineBuilderPage() {
                       {/* Per-segment Audio Upload */}
                       <div className="mt-3 pt-3 border-t border-belt-gray/20">
                          <label className="block text-[8px] font-black text-belt-white/20 uppercase tracking-widest mb-1">Trigger Track</label>
-                         {event.audioUrl ? (
-                           <div className="flex items-center gap-2">
-                             <span className="text-[8px] text-green-500 font-bold uppercase truncate max-w-[80px]">✓ Loaded</span>
-                             <button onClick={(e) => { e.stopPropagation(); updateEvent(index, { audioUrl: undefined }); }} className="text-[8px] text-red-500 font-bold hover:text-red-400">Clear</button>
-                           </div>
-                         ) : (
-                           <input
-                             type="file"
-                             accept="audio/*"
-                             onClick={e => e.stopPropagation()}
-                             onChange={async (e) => {
-                               const file = e.target.files?.[0];
-                               if (!file) return;
-                               try {
-                                 const url = await uploadAudio(file, `segment-${index}-${Date.now()}`);
-                                 updateEvent(index, { audioUrl: url });
-                               } catch (error) {
-                                 console.error("Audio upload failed:", error);
-                               }
-                             }}
-                             className="w-full text-[8px] text-belt-white/30 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[8px] file:font-bold file:uppercase file:bg-belt-gray file:text-white hover:file:bg-belt-red transition-all cursor-pointer"
-                           />
-                         )}
+                         <select
+                           value={event.audioUrl || ""}
+                           onClick={e => e.stopPropagation()}
+                           onChange={(e) => updateEvent(index, { audioUrl: e.target.value || undefined })}
+                           className="w-full bg-belt-gray/30 border-none rounded text-[8px] text-belt-white font-bold uppercase p-1.5 focus:ring-1 focus:ring-belt-red cursor-pointer truncate"
+                         >
+                           <option value="">-- Continue Previous --</option>
+                           {libraryTracks.map(t => (
+                             <option key={t.id} value={t.url}>{t.name}</option>
+                           ))}
+                         </select>
                       </div>
                     </div>
                   ))}

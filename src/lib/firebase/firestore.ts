@@ -264,3 +264,36 @@ export const searchNotes = async (
   }
   return notes;
 };
+
+// ========================
+// Audio Tracks Collection
+// ========================
+
+export interface AudioTrack {
+  id: string;
+  name: string;
+  url: string;
+  uploadedAt: string;
+  uploaderId: string;
+}
+
+export const tracksCollection = collection(db, "audio_tracks");
+
+export const addAudioTrack = async (track: Omit<AudioTrack, "id" | "uploadedAt">) => {
+  const docRef = await addDoc(tracksCollection, {
+    ...track,
+    uploadedAt: new Date().toISOString(),
+  });
+  return docRef.id;
+};
+
+export const deleteAudioTrack = async (id: string) => {
+  const trackRef = doc(db, "audio_tracks", id);
+  await deleteDoc(trackRef);
+};
+
+export const getAllAudioTracks = async (): Promise<AudioTrack[]> => {
+  const q = query(tracksCollection, orderBy("uploadedAt", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as AudioTrack));
+};
