@@ -27,3 +27,7 @@ yarn-error.log/
 
 # uploads
 /uploads
+
+# firebase & vercel
+.firebase/
+.vercel/
