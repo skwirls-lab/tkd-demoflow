@@ -19,28 +19,28 @@ export default function LiveRoutinePage() {
   const [savingNote, setSavingNote] = useState(false);
   const [seekTo, setSeekTo] = useState<number | undefined>(undefined);
   const [syncAudio, setSyncAudio] = useState(false);
+  const [autoAdvance, setAutoAdvance] = useState(true);
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Manual-First Engine: Auto-advance segments based on time IF playing
+  // Auto-advance segments based on time IF playing and Auto-Advance is enabled
   useEffect(() => {
-    if (isPlaying && routine && routine.events.length > 0) {
+    if (isPlaying && autoAdvance && routine && routine.events.length > 0) {
       const sortedEvents = [...routine.events].sort((a, b) => a.timestamp - b.timestamp);
       
-      // Look for the next segment in time
-      const nextSegmentIndexInSorted = sortedEvents.findIndex((e, i) => 
-        i > sortedEvents.findIndex(curr => curr === routine.events[activeSegmentIndex]) &&
-        e.timestamp > routine.events[activeSegmentIndex].timestamp && // Must be a real jump in time
-        e.timestamp <= currentTime
-      );
+      // Find the LATEST segment that should be active based on current time
+      let targetIndex = -1;
+      for (let i = 0; i < sortedEvents.length; i++) {
+        if (sortedEvents[i].timestamp <= currentTime) {
+          targetIndex = routine.events.findIndex(e => e === sortedEvents[i]);
+        }
+      }
 
-      if (nextSegmentIndexInSorted !== -1) {
-        const nextEvent = sortedEvents[nextSegmentIndexInSorted];
-        const originalIndex = routine.events.findIndex(e => e === nextEvent);
-        setActiveSegmentIndex(originalIndex);
+      if (targetIndex !== -1 && targetIndex !== activeSegmentIndex) {
+        setActiveSegmentIndex(targetIndex);
       }
     }
-  }, [currentTime, isPlaying, routine, activeSegmentIndex]);
+  }, [currentTime, isPlaying, autoAdvance, routine, activeSegmentIndex]);
 
   // Timer for manual stopwatch
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function LiveRoutinePage() {
 
   return (
     <div className="min-h-screen bg-belt-black flex flex-col">
-      {/* Header (RESPONSIVE TYPO) */}
+      {/* Header */}
       <div className="bg-belt-dark/80 backdrop-blur-md border-b border-belt-gray/30 p-3 md:p-4 sticky top-16 z-30">
         <div className="max-w-[1800px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-4">
@@ -165,19 +165,30 @@ export default function LiveRoutinePage() {
               <h1 className="text-sm md:text-xl font-black text-belt-white uppercase italic tracking-tighter truncate max-w-[120px] md:max-w-none">
                 {routine.name}
               </h1>
-              <div className="flex items-center gap-3">
-                <span className="text-[8px] md:text-[10px] text-belt-gold font-bold uppercase tracking-widest">
+              <div className="flex items-center gap-2 md:gap-4">
+                <span className="text-[8px] md:text-[10px] text-belt-gold font-bold uppercase tracking-widest whitespace-nowrap">
                   {isPlaying ? "● On Air" : "○ Stby"}
                 </span>
-                <label className="flex items-center gap-1.5 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={syncAudio}
-                    onChange={(e) => setSyncAudio(e.target.checked)}
-                    className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-belt-gray border-none text-belt-red focus:ring-0 cursor-pointer"
-                  />
-                  <span className="text-[8px] md:text-[9px] font-black text-belt-white/30 group-hover:text-belt-white transition-colors uppercase tracking-widest">Sync</span>
-                </label>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-1.5 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={syncAudio}
+                      onChange={(e) => setSyncAudio(e.target.checked)}
+                      className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-belt-gray border-none text-belt-red focus:ring-0 cursor-pointer"
+                    />
+                    <span className="text-[8px] md:text-[9px] font-black text-belt-white/30 group-hover:text-belt-white transition-colors uppercase tracking-widest">Sync Audio</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={autoAdvance}
+                      onChange={(e) => setAutoAdvance(e.target.checked)}
+                      className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-belt-gray border-none text-belt-gold focus:ring-0 cursor-pointer"
+                    />
+                    <span className="text-[8px] md:text-[9px] font-black text-belt-white/30 group-hover:text-belt-gold transition-colors uppercase tracking-widest">Auto Advance</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -207,58 +218,63 @@ export default function LiveRoutinePage() {
       </div>
 
       <div className="flex-1 p-3 md:p-8 overflow-y-auto pb-32">
-        <div className="max-w-[1800px] mx-auto flex flex-col gap-6 md:gap-12">
+        <div className="max-w-[1800px] mx-auto flex flex-col gap-4 md:gap-8">
           
-          {/* Mat (FLUID DOTS) */}
-          <div className="w-full">
-            <div className="card w-full aspect-[3/1] relative bg-[#0a0a0a] border-2 md:border-[8px] border-belt-gray/40 overflow-hidden shadow-2xl rounded-xl md:rounded-3xl">
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-1/2 left-0 right-0 h-px bg-white/5 -translate-y-1/2" />
-                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/5 -translate-x-1/2" />
-              </div>
+          <div className="flex flex-col gap-3">
+             {/* Front Label (OUTSIDE GRID) */}
+            <div className="flex items-center justify-center gap-4 px-12">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-belt-red/20" />
+              <span className="text-[8px] md:text-[10px] font-bold text-belt-red uppercase tracking-[0.4em] italic opacity-60">Audience / Front</span>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-belt-red/20" />
+            </div>
 
-              <div className="absolute top-3 md:top-6 left-1/2 -translate-x-1/2 px-4 md:px-8 py-1 md:py-2 bg-belt-red text-[8px] md:text-[11px] font-black text-white uppercase tracking-[0.3em] md:tracking-[0.4em] rounded-full shadow-2xl z-10 italic">
-                Front
-              </div>
-
-              {/* Members (PERCENTAGE SCALED) */}
-              {currentEvent?.formations && Object.entries(currentEvent.formations).map(([memberId, pos]) => {
-                const member = allMembers.find(m => m.id === memberId);
-                return (
-                  <div
-                    key={memberId}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-[1500ms] ease-in-out"
-                    style={{ 
-                      left: `${pos.x}%`, 
-                      top: `${pos.y}%`,
-                      width: '3.5%',
-                      aspectRatio: '1/1'
-                    }}
-                  >
-                    <div className="w-full h-full rounded-full bg-belt-gold border-[1.5px] md:border-2 border-belt-black flex flex-col items-center justify-center shadow-2xl ring-1 md:ring-2 ring-belt-gold/20">
-                      <span className="text-belt-black font-black text-[max(6px,0.6vw)]">
-                        {member?.name.split(" ").map(n => n[0]).join("") || "??"}
-                      </span>
-                    </div>
-                    {pos.action && (
-                      <div className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-belt-black/90 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg border border-belt-gray/30 text-[6px] md:text-[8px] font-black text-belt-gold uppercase tracking-widest shadow-xl z-20 ${pos.y > 65 ? "bottom-full mb-2 md:mb-3" : "top-full mt-2 md:mt-3"}`}>
-                        {pos.action}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {!currentEvent?.formations && (
-                <div className="absolute inset-0 flex items-center justify-center text-belt-white/10 text-[10px] md:text-sm font-black uppercase tracking-[0.3em]">
-                  Standing By...
+            {/* Mat (FLUID DOTS) */}
+            <div className="w-full">
+              <div className="card w-full aspect-[3/1] relative bg-[#0a0a0a] border-2 md:border-[8px] border-belt-gray/40 overflow-hidden shadow-2xl rounded-xl md:rounded-3xl">
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute top-1/2 left-0 right-0 h-px bg-white/5 -translate-y-1/2" />
+                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/5 -translate-x-1/2" />
                 </div>
-              )}
+
+                {/* Members (PERCENTAGE SCALED) */}
+                {currentEvent?.formations && Object.entries(currentEvent.formations).map(([memberId, pos]) => {
+                  const member = allMembers.find(m => m.id === memberId);
+                  return (
+                    <div
+                      key={memberId}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-[1500ms] ease-in-out"
+                      style={{ 
+                        left: `${pos.x}%`, 
+                        top: `${pos.y}%`,
+                        width: '3.5%',
+                        aspectRatio: '1/1'
+                      }}
+                    >
+                      <div className="w-full h-full rounded-full bg-belt-gold border-[1.5px] md:border-2 border-belt-black flex flex-col items-center justify-center shadow-2xl ring-1 md:ring-2 ring-belt-gold/20">
+                        <span className="text-belt-black font-black text-[max(6px,0.6vw)]">
+                          {member?.name.split(" ").map(n => n[0]).join("") || "??"}
+                        </span>
+                      </div>
+                      {pos.action && (
+                        <div className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-belt-black/90 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg border border-belt-gray/30 text-[6px] md:text-[8px] font-black text-belt-gold uppercase tracking-widest shadow-xl z-20 ${pos.y > 65 ? "bottom-full mb-2 md:mb-3" : "top-full mt-2 md:mt-3"}`}>
+                          {pos.action}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {!currentEvent?.formations && (
+                  <div className="absolute inset-0 flex items-center justify-center text-belt-white/10 text-[10px] md:text-sm font-black uppercase tracking-[0.3em]">
+                    Standing By...
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
-            {/* LEFT: Notes (RESPONSIVE) */}
+            {/* LEFT: Notes */}
             <div className="lg:col-span-8 space-y-6 md:space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-3">
@@ -308,7 +324,7 @@ export default function LiveRoutinePage() {
               </div>
             </div>
 
-            {/* RIGHT: Status (RESPONSIVE) */}
+            {/* RIGHT: Status */}
             <div className="lg:col-span-4 space-y-6 md:space-y-8">
               <div className={`card p-6 md:p-8 border-2 transition-all duration-500 ${currentEvent ? "border-belt-red bg-belt-red/5" : "border-belt-gray"}`}>
                 <p className="text-[8px] md:text-[10px] font-black text-belt-gold uppercase tracking-[0.2em] mb-4 md:mb-6">Active Segment</p>
