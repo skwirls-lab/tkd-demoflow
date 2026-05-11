@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Member, addMember, updateMember } from "@/lib/firebase/firestore";
+import { Member, addMember, updateMember, deleteMember } from "@/lib/firebase/firestore";
 import { uploadPhoto } from "@/lib/firebase/storage";
 
 interface MemberModalProps {
@@ -23,15 +23,22 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
 
   const ranks = [
     "White Belt",
-    "White-Yellow Stripe",
+    "Yellow Stripe",
     "Yellow Belt",
-    "Yellow-Green Stripe",
+    "Orange Stripe",
+    "Orange Belt",
+    "Green Stripe",
     "Green Belt",
-    "Green-Blue Stripe",
+    "Blue Stripe",
     "Blue Belt",
-    "Blue-Red Stripe",
+    "Brown Stripe",
+    "Brown Belt",
+    "Red Stripe",
     "Red Belt",
-    "Red-Black Stripe",
+    "Red with Gup",
+    "Black Stripe",
+    "Black Stripe with Gup",
+    "Semi-Black",
     "Black Belt 1st Dan",
     "Black Belt 2nd Dan",
     "Black Belt 3rd Dan",
@@ -99,6 +106,22 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
       onClose();
     } catch (error) {
       console.error("Failed to save member:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!member) return;
+    if (!confirm(`Are you sure you want to delete ${member.name}?`)) return;
+
+    setSaving(true);
+    try {
+      await deleteMember(member.id);
+      onSave();
+      onClose();
+    } catch (error) {
+      console.error("Failed to delete member:", error);
     } finally {
       setSaving(false);
     }
@@ -224,17 +247,29 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="btn-secondary flex-1">
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || !name.trim() || !rank}
-            className="btn-primary flex-1 disabled:opacity-50"
-          >
-            {saving ? "Saving..." : member ? "Update" : "Add Member"}
-          </button>
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <button onClick={onClose} className="btn-secondary flex-1">
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !name.trim() || !rank}
+              className="btn-primary flex-1 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : member ? "Update" : "Add Member"}
+            </button>
+          </div>
+          
+          {member && (
+            <button
+              onClick={handleDelete}
+              disabled={saving}
+              className="w-full py-3 text-red-500 text-sm font-medium hover:bg-red-500/10 rounded-lg transition-colors"
+            >
+              Delete Member
+            </button>
+          )}
         </div>
       </div>
     </div>

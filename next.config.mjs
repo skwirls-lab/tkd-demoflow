@@ -1,12 +1,19 @@
 /** @type {import('next').NextConfig} */
+import withPWAInit from "next-pwa";
+
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ["firebasestorage.googleapis.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+      },
+    ],
   },
 };
 
-const withPWA = require("next-pwa")({
+const withPWA = withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
@@ -56,4 +63,4 @@ const withPWA = require("next-pwa")({
   ],
 });
 
-module.exports = withPWA(nextConfig);
+export default withPWA(nextConfig);

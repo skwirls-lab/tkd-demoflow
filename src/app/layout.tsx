@@ -11,14 +11,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Taekwondo Demo Team | Command Center",
+  title: "TKD DemoFlow | Command Center",
   description: "Manage attendance, choreography, audio, and collaboration for your Taekwondo Demo Team",
   manifest: "/manifest.json",
   themeColor: "#dc2626",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "DemoTeam",
+    title: "TKD DemoFlow",
   },
 };
 

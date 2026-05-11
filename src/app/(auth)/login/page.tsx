@@ -41,7 +41,7 @@ export default function LoginPage() {
             <span className="text-3xl font-black text-white">TKD</span>
           </div>
           <h1 className="text-2xl font-bold text-belt-white">
-            {isSignUp ? "Create Account" : "DemoTeam Login"}
+            {isSignUp ? "Create Account" : "TKD DemoFlow Login"}
           </h1>
           <p className="text-belt-white/60 mt-2">
             {isSignUp
@@ -112,7 +112,7 @@ export default function LoginPage() {
 
         <div className="mt-8 pt-6 border-t border-gray-800 text-center">
           <p className="text-belt-white/40 text-xs">
-            Taekwondo Demo Team Command Center v0.1.0
+            TKD DemoFlow Command Center v0.1.0
           </p>
         </div>
       </div>

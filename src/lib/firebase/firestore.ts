@@ -94,6 +94,67 @@ export const getAttendanceHistory = async (
 };
 
 // ========================
+// Attendance Records (Daily)
+// ========================
+
+export const attendanceRecordsCollection = collection(db, "attendance_records");
+
+export const saveAttendanceRecord = async (
+  memberId: string,
+  date: string,
+  present: boolean,
+  recordedBy: string
+) => {
+  // Use a deterministic ID: date_memberId
+  const docId = `${date}_${memberId}`;
+  const docRef = doc(db, "attendance_records", docId);
+  
+  await updateDoc(docRef, {
+    memberId,
+    date,
+    present,
+    recordedBy,
+    recordedAt: new Date().toISOString(),
+  }).catch(async (error) => {
+    // If doc doesn't exist, create it
+    if (error.code === "not-found") {
+      const { setDoc } = await import("firebase/firestore");
+      await setDoc(docRef, {
+        memberId,
+        date,
+        present,
+        recordedBy,
+        recordedAt: new Date().toISOString(),
+      });
+    } else {
+      throw error;
+    }
+  });
+
+  // Also save to legacy member sub-collection for history
+  const memberAttendanceRef = collection(db, `members/${memberId}/attendance`);
+  await addDoc(memberAttendanceRef, {
+    date,
+    present,
+    recordedBy,
+    recordedAt: new Date().toISOString(),
+  });
+};
+
+export const getAttendanceForDate = async (
+  date: string
+): Promise<Record<string, boolean>> => {
+  const q = query(attendanceRecordsCollection, where("date", "==", date));
+  const snapshot = await getDocs(q);
+  const records: Record<string, boolean> = {};
+  snapshot.docs.forEach((doc) => {
+    const data = doc.data();
+    records[data.memberId] = data.present;
+  });
+  return records;
+};
+
+// ========================
 // Routines Collection
 // ========================
 
@@ -101,6 +162,8 @@ export interface RoutineEvent {
   timestamp: number; // seconds from start
   label: string;
   type: "formation" | "technique" | "board" | "transition" | "music" | "other";
+  formations?: Record<string, { x: number; y: number; action?: string }>; // memberId -> {x, y, action}
+  audioUrl?: string; // Optional: Override song for this segment
 }
 
 export interface Routine {
@@ -108,6 +171,7 @@ export interface Routine {
   name: string;
   audioUrl: string;
   events: RoutineEvent[];
+  notes?: { authorId: string; content: string; timestamp: string }[];
   createdAt: string;
   createdBy: string;
 }

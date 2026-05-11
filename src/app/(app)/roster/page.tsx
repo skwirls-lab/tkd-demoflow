@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllMembers, Member } from "@/lib/firebase/firestore";
+import { getAllMembers, Member, getAttendanceForDate, saveAttendanceRecord } from "@/lib/firebase/firestore";
 import RosterGrid from "@/components/roster/RosterGrid";
 import MemberModal from "@/components/roster/MemberModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,11 +11,26 @@ export default function RosterPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
-  const { isAdmin } = useAuth();
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [attendance, setAttendance] = useState<Record<string, boolean>>({});
+  const { user } = useAuth();
 
   useEffect(() => {
     loadMembers();
   }, []);
+
+  useEffect(() => {
+    loadAttendance();
+  }, [selectedDate]);
+
+  const loadAttendance = async () => {
+    try {
+      const records = await getAttendanceForDate(selectedDate);
+      setAttendance(records);
+    } catch (error) {
+      console.error("Failed to load attendance:", error);
+    }
+  };
 
   const loadMembers = async () => {
     try {
@@ -39,19 +54,22 @@ export default function RosterPage() {
   };
 
   const handleAttendanceToggle = async (memberId: string, present: boolean) => {
-    // Optimistic update
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.id === memberId ? { ...m, _attendancePresent: present } : m
-      )
-    );
+    if (!user) return;
 
-    // TODO: Save attendance record to Firestore
-    console.log(`Attendance toggled for ${memberId}: ${present ? "Present" : "Absent"}`);
+    // Optimistic update
+    setAttendance((prev) => ({ ...prev, [memberId]: present }));
+
+    try {
+      await saveAttendanceRecord(memberId, selectedDate, present, user.uid);
+    } catch (error) {
+      console.error("Failed to save attendance:", error);
+      // Revert on error
+      loadAttendance();
+    }
   };
 
   return (
-    <div className="px-4 py-6 max-w-4xl mx-auto">
+    <div className="px-4 py-6 max-w-4xl mx-auto pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -60,11 +78,9 @@ export default function RosterPage() {
             {members.filter((m) => m.status === "active").length} active members
           </p>
         </div>
-        {isAdmin && (
-          <button onClick={handleAddMember} className="btn-primary">
-            <span className="text-xl mr-2">+</span> Add Member
-          </button>
-        )}
+        <button onClick={handleAddMember} className="btn-primary">
+          <span className="text-xl mr-2">+</span> Add Member
+        </button>
       </div>
 
       {/* Attendance Date Selector */}
@@ -73,7 +89,7 @@ export default function RosterPage() {
           <div>
             <p className="text-sm text-belt-white/60">Attendance Date</p>
             <p className="text-lg font-semibold text-belt-white">
-              {new Date().toLocaleDateString("en-US", {
+              {new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", {
                 weekday: "long",
                 year: "numeric",
                 month: "long",
@@ -83,8 +99,9 @@ export default function RosterPage() {
           </div>
           <input
             type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
             className="bg-belt-gray border border-gray-700 rounded-lg px-4 py-2 text-belt-white min-h-[48px]"
-            defaultValue={new Date().toISOString().split("T")[0]}
           />
         </div>
       </div>
@@ -110,19 +127,17 @@ export default function RosterPage() {
         <div className="card text-center py-12">
           <p className="text-4xl mb-4">🥋</p>
           <p className="text-belt-white/60 text-lg">No members yet</p>
-          {isAdmin && (
-            <button onClick={handleAddMember} className="btn-primary mt-4">
-              Add Your First Member
-            </button>
-          )}
+          <button onClick={handleAddMember} className="btn-primary mt-4">
+            Add Your First Member
+          </button>
         </div>
       )}
 
       {!loading && members.length > 0 && (
         <RosterGrid
-          members={members}
+          members={members.map(m => ({ ...m, _attendancePresent: attendance[m.id] }))}
           onToggleAttendance={handleAttendanceToggle}
-          onEditMember={isAdmin ? handleEditMember : undefined}
+          onEditMember={handleEditMember}
         />
       )}
 

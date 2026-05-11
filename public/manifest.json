@@ -1,6 +1,6 @@
 {
-  "name": "Taekwondo Demo Team",
-  "short_name": "DemoTeam",
+  "name": "TKD DemoFlow",
+  "short_name": "DemoFlow",
   "description": "Command Center for Taekwondo Demo Team management",
   "start_url": "/",
   "display": "standalone",

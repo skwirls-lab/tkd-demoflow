@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllMembers, Member, addAttendanceRecord } from "@/lib/firebase/firestore";
+import { getAllMembers, Member, saveAttendanceRecord, getAttendanceForDate } from "@/lib/firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AttendanceHistoryPage() {
@@ -17,6 +17,19 @@ export default function AttendanceHistoryPage() {
     loadMembers();
   }, []);
 
+  useEffect(() => {
+    loadAttendance();
+  }, [selectedDate]);
+
+  const loadAttendance = async () => {
+    try {
+      const records = await getAttendanceForDate(selectedDate);
+      setAttendance(records);
+    } catch (error) {
+      console.error("Failed to load attendance:", error);
+    }
+  };
+
   const loadMembers = async () => {
     try {
       const data = await getAllMembers();
@@ -29,19 +42,17 @@ export default function AttendanceHistoryPage() {
   };
 
   const handleToggle = async (memberId: string) => {
+    if (!user) return;
+    
     const next = !attendance[memberId];
     setAttendance((prev) => ({ ...prev, [memberId]: next }));
 
-    if (user) {
-      try {
-        await addAttendanceRecord(memberId, {
-          date: selectedDate,
-          present: next,
-          recordedBy: user.uid,
-        });
-      } catch (error) {
-        console.error("Failed to save attendance:", error);
-      }
+    try {
+      await saveAttendanceRecord(memberId, selectedDate, next, user.uid);
+    } catch (error) {
+      console.error("Failed to save attendance:", error);
+      // Revert
+      loadAttendance();
     }
   };
 

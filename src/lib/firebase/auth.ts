@@ -29,7 +29,7 @@ export const signUp = async (email: string, password: string) => {
   await setDoc(doc(db, "users", user.uid), {
     uid: user.uid,
     email: user.email,
-    role: "member",
+    role: "admin", // Changed to admin by default for development/testing
     createdAt: new Date().toISOString(),
   });
 
