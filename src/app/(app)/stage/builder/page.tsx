@@ -48,11 +48,13 @@ export default function RoutineBuilderPage() {
   const loadRoutine = async () => {
     try {
       const data = await getRoutine(editId as string);
-      setName(data.name);
-      setAudioUrl(data.audioUrl || "");
-      setEvents(data.events || []);
-      setStep("editing");
-      if (data.events.length > 0) setSelectedEventIndex(0);
+      if (data) {
+        setName(data.name);
+        setAudioUrl(data.audioUrl || "");
+        setEvents(data.events || []);
+        setStep("editing");
+        if (data.events.length > 0) setSelectedEventIndex(0);
+      }
     } catch (error) {
       console.error("Failed to load routine:", error);
     } finally {
@@ -97,7 +99,6 @@ export default function RoutineBuilderPage() {
       } else {
         await addRoutine({
           ...routineData,
-          createdAt: new Date().toISOString(),
           authorId: user.uid,
           notes: []
         });

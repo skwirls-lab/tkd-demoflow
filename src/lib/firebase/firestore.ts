@@ -173,7 +173,7 @@ export interface Routine {
   events: RoutineEvent[];
   notes?: { authorId: string; content: string; timestamp: string }[];
   createdAt: string;
-  createdBy: string;
+  authorId: string;
 }
 
 export const routinesCollection = collection(db, "routines");

@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   title: "TKD DemoFlow | Command Center",
   description: "Manage attendance, choreography, audio, and collaboration for your Taekwondo Demo Team",
   manifest: "/manifest.json",
-  themeColor: "#dc2626",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

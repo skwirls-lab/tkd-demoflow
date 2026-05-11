@@ -1,19 +1,17 @@
-/** @type {import('next').NextConfig} */
+// next.config.mjs
 import withPWAInit from "next-pwa";
-
-const nextConfig = {
+var nextConfig = {
   reactStrictMode: true,
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "firebasestorage.googleapis.com",
-      },
-    ],
-  },
+        hostname: "firebasestorage.googleapis.com"
+      }
+    ]
+  }
 };
-
-const withPWA = withPWAInit({
+var withPWA = withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
@@ -26,9 +24,10 @@ const withPWA = withPWAInit({
         cacheName: "firebase-storage-cache",
         expiration: {
           maxEntries: 50,
-          maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-        },
-      },
+          maxAgeSeconds: 60 * 60 * 24 * 30
+          // 30 days
+        }
+      }
     },
     {
       urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*$/i,
@@ -37,13 +36,13 @@ const withPWA = withPWAInit({
         cacheName: "google-fonts-cache",
         expiration: {
           maxEntries: 10,
-          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-        },
-      },
+          maxAgeSeconds: 60 * 60 * 24 * 365
+          // 1 year
+        }
+      }
     },
     {
       urlPattern: ({ url }) => {
-        // Cache Firestore data for offline access
         return url.pathname.startsWith("/roster") || url.pathname.startsWith("/stage");
       },
       handler: "NetworkFirst",
@@ -52,11 +51,14 @@ const withPWA = withPWAInit({
         networkTimeoutSeconds: 10,
         expiration: {
           maxEntries: 50,
-          maxAgeSeconds: 60 * 60 * 24, // 24 hours
-        },
-      },
-    },
-  ],
+          maxAgeSeconds: 60 * 60 * 24
+          // 24 hours
+        }
+      }
+    }
+  ]
 });
-
-export default withPWA(nextConfig);
+var next_config_default = withPWA(nextConfig);
+export {
+  next_config_default as default
+};
