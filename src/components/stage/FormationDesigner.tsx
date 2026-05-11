@@ -44,14 +44,49 @@ export default function FormationDesigner({ members, formation, onChange }: Form
     });
   };
 
+  const handleTouchStart = (e: React.TouchEvent, id: string) => {
+    // Prevent default to avoid scroll on drag start
+    e.stopPropagation();
+    setDraggingMemberId(id);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!draggingMemberId || !matRef.current) return;
+    
+    const touch = e.touches[0];
+    const rect = matRef.current.getBoundingClientRect();
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+
+    const constrainedX = Math.max(0, Math.min(100, x));
+    const constrainedY = Math.max(0, Math.min(100, y));
+
+    onChange({
+      ...formation,
+      [draggingMemberId]: {
+        ...formation[draggingMemberId],
+        x: constrainedX,
+        y: constrainedY,
+      },
+    });
+  };
+
   const handleMouseUp = () => {
     setDraggingMemberId(null);
   };
 
+  const handleTouchEnd = () => {
+    setDraggingMemberId(null);
+  };
+
   useEffect(() => {
-    const handleGlobalMouseUp = () => setDraggingMemberId(null);
-    window.addEventListener("mouseup", handleGlobalMouseUp);
-    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+    const handleGlobalEnd = () => setDraggingMemberId(null);
+    window.addEventListener("mouseup", handleGlobalEnd);
+    window.addEventListener("touchend", handleGlobalEnd);
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalEnd);
+      window.removeEventListener("touchend", handleGlobalEnd);
+    };
   }, []);
 
   const availableMembers = members.filter(m => !formation[m.id]);
@@ -100,10 +135,12 @@ export default function FormationDesigner({ members, formation, onChange }: Form
         </div>
 
         {/* Main Mat */}
-        <div className="w-full relative aspect-[3/1] bg-[#0a0a0a] rounded-xl md:rounded-3xl border-2 md:border-4 border-belt-gray/40 overflow-hidden shadow-2xl cursor-crosshair select-none"
+        <div className="w-full relative aspect-[3/1] bg-[#0a0a0a] rounded-xl md:rounded-3xl border-2 md:border-4 border-belt-gray/40 overflow-hidden shadow-2xl cursor-crosshair select-none touch-none"
             ref={matRef}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             style={{
               backgroundImage: "radial-gradient(circle, #222 1px, transparent 1px)",
               backgroundSize: "5% 15%"
@@ -123,6 +160,7 @@ export default function FormationDesigner({ members, formation, onChange }: Form
                 <div
                   key={id}
                   onMouseDown={(e) => handleMouseDown(e, id)}
+                  onTouchStart={(e) => handleTouchStart(e, id)}
                   className={`absolute -translate-x-1/2 -translate-y-1/2 group transition-shadow ${
                     draggingMemberId === id ? "z-50 cursor-grabbing" : "z-10 cursor-grab"
                   }`}

@@ -97,7 +97,22 @@ export const getAttendanceHistory = async (
 // Attendance Records (Daily)
 // ========================
 
+export interface GlobalAttendanceRecord {
+  id?: string;
+  memberId: string;
+  date: string;
+  present: boolean;
+  recordedBy: string;
+  recordedAt: string;
+}
+
 export const attendanceRecordsCollection = collection(db, "attendance_records");
+
+export const getAllAttendanceRecords = async (): Promise<GlobalAttendanceRecord[]> => {
+  const q = query(attendanceRecordsCollection, orderBy("date", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GlobalAttendanceRecord));
+};
 
 export const saveAttendanceRecord = async (
   memberId: string,
