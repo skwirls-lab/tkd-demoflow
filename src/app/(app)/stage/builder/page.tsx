@@ -13,6 +13,7 @@ import {
 } from "@/lib/firebase/firestore";
 import FormationDesigner from "@/components/stage/FormationDesigner";
 import { useAuth } from "@/contexts/AuthContext";
+import { uploadAudio } from "@/lib/firebase/storage";
 import Link from "next/link";
 
 export default function RoutineBuilderPage() {
@@ -147,35 +148,41 @@ export default function RoutineBuilderPage() {
                     className="input-field"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-belt-white/30 uppercase mb-2 tracking-widest">Audio URL (Optional)</label>
-                  <input
-                    type="text"
-                    value={audioUrl}
-                    onChange={(e) => setAudioUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="input-field"
-                  />
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-belt-white/30 uppercase tracking-widest">Main Audio Track (Optional)</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="file"
+                      accept="audio/mp3, audio/wav, audio/m4a"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const url = await uploadAudio(file, name || "routine");
+                          setAudioUrl(url);
+                        } catch (error) {
+                          console.error("Audio upload failed:", error);
+                          alert("Failed to upload audio.");
+                        }
+                      }}
+                      className="block w-full text-xs text-belt-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-belt-red file:text-white hover:file:bg-red-600 transition-all cursor-pointer"
+                    />
+                  </div>
+                  {audioUrl && <p className="text-[10px] text-green-500 font-bold">✓ Audio attached</p>}
                 </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => setStep("marking")} className="btn-primary py-6 flex flex-col items-center gap-2">
-                <span className="text-xl">⏱️</span>
-                <span className="font-black uppercase tracking-widest text-xs md:text-sm">Manual Marks</span>
-              </button>
-              <button 
-                onClick={() => {
-                  setStep("editing");
-                  if (events.length === 0) addSegment();
-                }}
-                className="btn-secondary py-6 flex flex-col items-center gap-2"
-              >
-                <span className="text-xl">📐</span>
-                <span className="font-black uppercase tracking-widest text-xs md:text-sm">Choreo First</span>
-              </button>
-            </div>
+            <button 
+              onClick={() => {
+                setStep("editing");
+                if (events.length === 0) addSegment();
+              }}
+              disabled={!name.trim()}
+              className="btn-primary w-full py-4 text-sm md:text-base font-black uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Start Designing →
+            </button>
           </div>
         )}
 
@@ -284,6 +291,33 @@ export default function RoutineBuilderPage() {
                         onChange={(e) => updateEvent(index, { label: e.target.value })}
                         className="bg-transparent border-none text-belt-white font-black p-0 focus:ring-0 text-[10px] md:text-[11px] uppercase tracking-wider w-full"
                       />
+                      {/* Per-segment Audio Upload */}
+                      <div className="mt-3 pt-3 border-t border-belt-gray/20">
+                         <label className="block text-[8px] font-black text-belt-white/20 uppercase tracking-widest mb-1">Trigger Track</label>
+                         {event.audioUrl ? (
+                           <div className="flex items-center gap-2">
+                             <span className="text-[8px] text-green-500 font-bold uppercase truncate max-w-[80px]">✓ Loaded</span>
+                             <button onClick={(e) => { e.stopPropagation(); updateEvent(index, { audioUrl: undefined }); }} className="text-[8px] text-red-500 font-bold hover:text-red-400">Clear</button>
+                           </div>
+                         ) : (
+                           <input
+                             type="file"
+                             accept="audio/*"
+                             onClick={e => e.stopPropagation()}
+                             onChange={async (e) => {
+                               const file = e.target.files?.[0];
+                               if (!file) return;
+                               try {
+                                 const url = await uploadAudio(file, `segment-${index}-${Date.now()}`);
+                                 updateEvent(index, { audioUrl: url });
+                               } catch (error) {
+                                 console.error("Audio upload failed:", error);
+                               }
+                             }}
+                             className="w-full text-[8px] text-belt-white/30 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[8px] file:font-bold file:uppercase file:bg-belt-gray file:text-white hover:file:bg-belt-red transition-all cursor-pointer"
+                           />
+                         )}
+                      </div>
                     </div>
                   ))}
                 </div>

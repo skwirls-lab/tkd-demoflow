@@ -126,6 +126,21 @@ export default function LiveRoutinePage() {
     return routine.events[activeSegmentIndex] || null;
   }, [routine, activeSegmentIndex]);
 
+  // Find the currently active audio track and its offset
+  const activeAudio = useMemo(() => {
+    if (!routine) return { url: null, offset: 0 };
+    let url = routine.audioUrl || null;
+    let offset = 0;
+
+    for (let i = 0; i <= activeSegmentIndex; i++) {
+      if (routine.events[i] && routine.events[i].audioUrl) {
+        url = routine.events[i].audioUrl as string;
+        offset = routine.events.slice(0, i).reduce((sum, e) => sum + e.timestamp, 0);
+      }
+    }
+    return { url, offset };
+  }, [routine, activeSegmentIndex]);
+
   // Manual Navigation
   const jumpToSegment = (index: number) => {
     if (!routine || index < 0 || index >= routine.events.length) return;
@@ -138,8 +153,19 @@ export default function LiveRoutinePage() {
       
     setCurrentTime(targetTime);
     
-    if (syncAudio && routine.audioUrl) {
-      setSeekTo(targetTime);
+    // If we have an active audio track, we need to seek the audio player to the relative time
+    if (syncAudio && activeAudio.url) {
+      let relativeTime = targetTime;
+      // Recalculate offset for the target index
+      let targetOffset = 0;
+      for (let i = 0; i <= index; i++) {
+        if (routine.events[i].audioUrl) {
+          targetOffset = routine.events.slice(0, i).reduce((sum, e) => sum + e.timestamp, 0);
+        }
+      }
+      relativeTime = targetTime - targetOffset;
+      
+      setSeekTo(relativeTime);
       setTimeout(() => setSeekTo(undefined), 50);
     }
   };
@@ -341,13 +367,15 @@ export default function LiveRoutinePage() {
               </div>
 
               <div className="card p-4 md:p-6 bg-belt-dark/60 border-belt-gray/20">
-                {routine.audioUrl ? (
+                {activeAudio.url ? (
                   <AudioPlayer
-                    url={routine.audioUrl}
+                    url={activeAudio.url}
                     isPlaying={isPlaying}
                     onTogglePlay={setIsPlaying}
                     onTimeUpdate={(time) => {
-                      if (seekTo === undefined) setCurrentTime(time);
+                      if (seekTo === undefined) {
+                        setCurrentTime(activeAudio.offset + time);
+                      }
                     }}
                     onEnded={() => setIsPlaying(false)}
                     seekTo={seekTo}
