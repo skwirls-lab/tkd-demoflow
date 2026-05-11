@@ -1,0 +1,59 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  images: {
+    domains: ["firebasestorage.googleapis.com"],
+  },
+};
+
+const withPWA = require("next-pwa")({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  swcMinify: true,
+  disable: process.env.NODE_ENV === "development",
+  cacheOnFrontEndNav: true,
+  aggressiveCache: true,
+  handleFetch: true,
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*$/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "firebase-storage-cache",
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+        },
+      },
+    },
+    {
+      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*$/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "google-fonts-cache",
+        expiration: {
+          maxEntries: 10,
+          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+        },
+      },
+    },
+    {
+      urlPattern: ({ url }) => {
+        // Cache Firestore data for offline access
+        return url.pathname.startsWith("/roster") || url.pathname.startsWith("/stage");
+      },
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "app-data-cache",
+        networkTimeoutSeconds: 10,
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 * 24, // 24 hours
+        },
+      },
+    },
+  ],
+});
+
+module.exports = withPWA(nextConfig);

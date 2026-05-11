@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 245, 245, 245;
+  --background-start-rgb: 10, 10, 10;
+  --background-end-rgb: 20, 20, 20;
+}
+
+@layer base {
+  * {
+    @apply border-gray-800;
+  }
+  body {
+    @apply bg-belt-black text-belt-white font-display antialiased;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-belt-red hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200 min-h-[48px] flex items-center justify-center;
+  }
+
+  .btn-secondary {
+    @apply bg-belt-gray hover:bg-gray-700 text-belt-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200 min-h-[48px] flex items-center justify-center;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200 min-h-[48px] flex items-center justify-center;
+  }
+
+  .card {
+    @apply bg-belt-dark border border-gray-800 rounded-xl p-4 shadow-lg;
+  }
+
+  .input-field {
+    @apply bg-belt-gray border border-gray-700 text-belt-white rounded-lg px-4 py-3 min-h-[48px] focus:outline-none focus:ring-2 focus:ring-belt-red focus:border-transparent w-full;
+  }
+
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  .live-display {
+    @apply text-5xl md:text-7xl font-black text-belt-gold tracking-tight text-center;
+  }
+
+  .live-next {
+    @apply text-2xl md:text-4xl font-bold text-belt-white/80 tracking-tight text-center;
+  }
+}
+
+/* Web Audio API visualizer canvas */
+.audio-visualizer {
+  @apply w-full h-32 rounded-lg bg-belt-dark;
+}
+
+/* Scrollbar styling for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #141414;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
