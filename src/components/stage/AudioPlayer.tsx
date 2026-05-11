@@ -20,78 +20,21 @@ export default function AudioPlayer({
   seekTo,
 }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animationRef = useRef<number | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(1);
 
   useEffect(() => {
-    if (audioRef.current && !analyserRef.current) {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      const audioCtx = new AudioContext();
-      const analyser = audioCtx.createAnalyser();
-      const source = audioCtx.createMediaElementSource(audioRef.current);
-      source.connect(analyser);
-      analyser.connect(audioCtx.destination);
-      analyser.fftSize = 256;
-      analyserRef.current = analyser;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isPlaying && analyserRef.current) {
-      draw();
-    } else if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-  }, [isPlaying]);
-
-  const draw = () => {
-    if (!analyserRef.current || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const renderFrame = () => {
-      animationRef.current = requestAnimationFrame(renderFrame);
-      analyserRef.current!.getByteFrequencyData(dataArray);
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      const barWidth = (canvas.width / bufferLength) * 2.5;
-      let barHeight;
-      let x = 0;
-
-      for (let i = 0; i < bufferLength; i++) {
-        barHeight = (dataArray[i] / 255) * canvas.height;
-        
-        // Gradient color based on intensity
-        const opacity = (dataArray[i] / 255) * 0.5 + 0.1;
-        ctx.fillStyle = `rgba(220, 38, 38, ${opacity})`; // belt-red
-        
-        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-        x += barWidth + 1;
-      }
-    };
-
-    renderFrame();
-  };
-
-  useEffect(() => {
     if (audioRef.current) {
       if (isPlaying) {
+        // When url changes, the audio element loads it and resets to paused.
+        // We need to explicitly call play() again.
         audioRef.current.play().catch(console.error);
       } else {
         audioRef.current.pause();
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, url]);
 
   useEffect(() => {
     if (seekTo !== undefined && audioRef.current) {
@@ -114,11 +57,7 @@ export default function AudioPlayer({
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, []);
+
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
@@ -142,16 +81,9 @@ export default function AudioPlayer({
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={onEnded}
-        crossOrigin="anonymous"
       />
 
-      {/* Background Visualizer */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full opacity-20 pointer-events-none"
-        width={400}
-        height={150}
-      />
+
 
       <div className="flex flex-col gap-6 relative z-10">
         {/* Progress Bar */}
