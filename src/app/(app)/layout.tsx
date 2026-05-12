@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { ReactNode } from "react";
+import Image from "next/image";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, signOut } = useAuth();
@@ -54,9 +55,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-belt-black pb-20">
       <header className="sticky top-0 z-40 bg-belt-black/80 backdrop-blur-md border-b border-belt-gray/50 px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-belt-red rounded-lg flex items-center justify-center">
-              <span className="text-white font-black text-xs">DF</span>
+          <div className="flex items-center gap-3">
+            <div className="relative w-8 h-8">
+              <Image 
+                src="/logo/logo.png" 
+                alt="Logo" 
+                fill
+                className="object-contain"
+              />
             </div>
             <span className="font-black text-lg tracking-tight text-belt-white uppercase">TKD DemoFlow</span>
           </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn, signUp } from "@/lib/firebase/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -37,16 +38,20 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-belt-black px-4">
       <div className="card max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-belt-red rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl font-black text-white">TKD</span>
+          <div className="mx-auto mb-6 relative w-24 h-24">
+            <Image 
+              src="/logo/logo.png" 
+              alt="TKD DemoFlow Logo" 
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
-          <h1 className="text-2xl font-bold text-belt-white">
-            {isSignUp ? "Create Account" : "TKD DemoFlow Login"}
+          <h1 className="text-3xl font-black text-belt-white uppercase tracking-tight">
+            {isSignUp ? "Create Account" : "TKD DEMOFLOW"}
           </h1>
-          <p className="text-belt-white/60 mt-2">
-            {isSignUp
-              ? "Sign up to access the Command Center"
-              : "Sign in to access the Command Center"}
+          <p className="text-[10px] font-black text-belt-white/40 uppercase tracking-[0.2em] mt-2">
+            DEMONSTRATION TEAM COMMAND CENTER
           </p>
         </div>
 
