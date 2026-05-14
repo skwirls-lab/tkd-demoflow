@@ -73,15 +73,19 @@ export default function RoutineBuilderPage() {
   };
 
   const addSegment = () => {
+    // If in marking mode, we use currentTime, otherwise default to a 5s segment
+    const duration = step === "marking" ? currentTime : 5.0;
+    
     const newEvent: RoutineEvent = {
-      timestamp: currentTime,
+      timestamp: duration,
       label: `Segment ${events.length + 1}`,
       type: "formation",
       formations: events.length > 0 ? { ...events[events.length - 1].formations } : {}
     };
-    const newEvents = [...events, newEvent].sort((a, b) => a.timestamp - b.timestamp);
+
+    const newEvents = [...events, newEvent];
     setEvents(newEvents);
-    setSelectedEventIndex(newEvents.findIndex(e => e.timestamp === currentTime));
+    setSelectedEventIndex(newEvents.length - 1);
   };
 
   const updateEvent = (index: number, updates: Partial<RoutineEvent>) => {
