@@ -18,6 +18,7 @@ interface FormationDesignerProps {
 export default function FormationDesigner({ members, formation, onChange }: FormationDesignerProps) {
   const matRef = useRef<HTMLDivElement>(null);
   const [draggingMemberId, setDraggingMemberId] = useState<string | null>(null);
+  const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
 
   const handleMouseDown = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -80,12 +81,23 @@ export default function FormationDesigner({ members, formation, onChange }: Form
   };
 
   useEffect(() => {
-    const handleGlobalEnd = () => setDraggingMemberId(null);
+    const handleGlobalEnd = () => {
+      setDraggingMemberId(null);
+    };
+    const handleGlobalClick = (e: MouseEvent) => {
+      // If clicking something that isn't a member dot, close popover
+      if (!(e.target as HTMLElement).closest('.cursor-grab')) {
+        setActivePopoverId(null);
+      }
+    };
+
     window.addEventListener("mouseup", handleGlobalEnd);
     window.addEventListener("touchend", handleGlobalEnd);
+    window.addEventListener("click", handleGlobalClick);
     return () => {
       window.removeEventListener("mouseup", handleGlobalEnd);
       window.removeEventListener("touchend", handleGlobalEnd);
+      window.removeEventListener("click", handleGlobalClick);
     };
   }, []);
 
@@ -159,10 +171,19 @@ export default function FormationDesigner({ members, formation, onChange }: Form
               return (
                 <div
                   key={id}
-                  onMouseDown={(e) => handleMouseDown(e, id)}
-                  onTouchStart={(e) => handleTouchStart(e, id)}
+                  onMouseDown={(e) => {
+                    handleMouseDown(e, id);
+                  }}
+                  onTouchStart={(e) => {
+                    handleTouchStart(e, id);
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActivePopoverId(activePopoverId === id ? null : id);
+                  }}
                   className={`absolute -translate-x-1/2 -translate-y-1/2 group transition-shadow ${
-                    draggingMemberId === id ? "z-50 cursor-grabbing" : "z-10 cursor-grab"
+                    draggingMemberId === id ? "z-50 cursor-grabbing" : 
+                    activePopoverId === id ? "z-40 cursor-pointer" : "z-10 cursor-grab"
                   }`}
                   style={{ 
                     left: `${pos.x}%`, 
@@ -180,9 +201,12 @@ export default function FormationDesigner({ members, formation, onChange }: Form
                   </div>
 
                   {/* Popover */}
-                  <div className={`absolute left-1/2 -translate-x-1/2 bg-belt-black/95 border border-belt-gray/50 rounded-lg p-2 min-w-[120px] md:min-w-[160px] shadow-2xl transition-all z-30 ${
-                    draggingMemberId === id ? "opacity-0" : "opacity-0 group-hover:opacity-100"
-                  } ${pos.y > 65 ? "bottom-full mb-2" : "top-full mt-2"}`}>
+                  <div 
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className={`absolute left-1/2 -translate-x-1/2 bg-belt-black/95 border border-belt-gray/50 rounded-lg p-2 min-w-[120px] md:min-w-[160px] shadow-2xl transition-all z-50 ${
+                      draggingMemberId === id || activePopoverId !== id ? "opacity-0 pointer-events-none scale-95" : "opacity-100 scale-100"
+                    } ${pos.y > 65 ? "bottom-full mb-2" : "top-full mt-2"}`}>
                     <p className="text-[8px] md:text-[10px] font-black text-belt-white uppercase mb-1 tracking-widest">{member.name}</p>
                     <input
                       type="text"
@@ -210,7 +234,7 @@ export default function FormationDesigner({ members, formation, onChange }: Form
                   
                   {/* Action Badge */}
                   {pos.action && !draggingMemberId && (
-                    <div className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-belt-black/80 backdrop-blur-sm px-2 py-0.5 rounded border border-belt-gold/20 text-[6px] md:text-[8px] font-black text-belt-gold uppercase tracking-tighter pointer-events-none group-hover:opacity-0 transition-opacity ${pos.y > 65 ? "-top-5 md:-top-7" : "-bottom-5 md:-bottom-7"}`}>
+                    <div className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-belt-black/80 backdrop-blur-sm px-2 py-0.5 rounded border border-belt-gold/20 text-[6px] md:text-[8px] font-black text-belt-gold uppercase tracking-tighter pointer-events-none transition-opacity ${activePopoverId === id ? "opacity-0" : "opacity-100"} ${pos.y > 65 ? "-top-5 md:-top-7" : "-bottom-5 md:-bottom-7"}`}>
                       {pos.action}
                     </div>
                   )}
