@@ -9,7 +9,9 @@ import {
   query,
   orderBy,
   where,
-  Timestamp,
+  setDoc,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import { db } from "./config";
 
@@ -120,35 +122,11 @@ export const saveAttendanceRecord = async (
   present: boolean,
   recordedBy: string
 ) => {
-  // Use a deterministic ID: date_memberId
-  const docId = `${date}_${memberId}`;
-  const docRef = doc(db, "attendance_records", docId);
-  
-  await updateDoc(docRef, {
+  // Deterministic ID (date_memberId) so re-tapping a member overwrites
+  // the same record instead of creating duplicates.
+  const docRef = doc(db, "attendance_records", `${date}_${memberId}`);
+  await setDoc(docRef, {
     memberId,
-    date,
-    present,
-    recordedBy,
-    recordedAt: new Date().toISOString(),
-  }).catch(async (error) => {
-    // If doc doesn't exist, create it
-    if (error.code === "not-found") {
-      const { setDoc } = await import("firebase/firestore");
-      await setDoc(docRef, {
-        memberId,
-        date,
-        present,
-        recordedBy,
-        recordedAt: new Date().toISOString(),
-      });
-    } else {
-      throw error;
-    }
-  });
-
-  // Also save to legacy member sub-collection for history
-  const memberAttendanceRef = collection(db, `members/${memberId}/attendance`);
-  await addDoc(memberAttendanceRef, {
     date,
     present,
     recordedBy,
@@ -181,21 +159,32 @@ export interface RoutineEvent {
   audioUrl?: string; // Optional: Override song for this segment
 }
 
+export interface RoutineNote {
+  authorId: string;
+  content: string;
+  timestamp: string;
+}
+
 export interface Routine {
   id: string;
   name: string;
   audioUrl: string;
   events: RoutineEvent[];
-  notes?: { authorId: string; content: string; timestamp: string }[];
+  notes?: RoutineNote[];
   createdAt: string;
+  updatedAt?: string;
   authorId: string;
 }
 
 export const routinesCollection = collection(db, "routines");
 
+// Firestore rejects `undefined` anywhere in a document (e.g. a segment whose
+// trigger track was cleared). Strip those keys before writing.
+const stripUndefined = <T,>(data: T): T => JSON.parse(JSON.stringify(data));
+
 export const addRoutine = async (routine: Omit<Routine, "id" | "createdAt">) => {
   const docRef = await addDoc(routinesCollection, {
-    ...routine,
+    ...stripUndefined(routine),
     createdAt: new Date().toISOString(),
   });
   return docRef.id;
@@ -203,7 +192,16 @@ export const addRoutine = async (routine: Omit<Routine, "id" | "createdAt">) => 
 
 export const updateRoutine = async (id: string, data: Partial<Routine>) => {
   const routineRef = doc(db, "routines", id);
-  await updateDoc(routineRef, data);
+  await updateDoc(routineRef, stripUndefined(data));
+};
+
+// Atomic note writes, so two coaches adding notes at once don't overwrite each other.
+export const addRoutineNote = async (routineId: string, note: RoutineNote) => {
+  await updateDoc(doc(db, "routines", routineId), { notes: arrayUnion(note) });
+};
+
+export const removeRoutineNote = async (routineId: string, note: RoutineNote) => {
+  await updateDoc(doc(db, "routines", routineId), { notes: arrayRemove(note) });
 };
 
 export const deleteRoutine = async (id: string) => {
@@ -311,4 +309,18 @@ export const getAllAudioTracks = async (): Promise<AudioTrack[]> => {
   const q = query(tracksCollection, orderBy("uploadedAt", "desc"));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as AudioTrack));
+};
+
+// ========================
+// Users
+// ========================
+
+export const getUserEmails = async (): Promise<Record<string, string>> => {
+  const snapshot = await getDocs(collection(db, "users"));
+  const emails: Record<string, string> = {};
+  snapshot.docs.forEach((d) => {
+    const data = d.data();
+    if (data.email) emails[d.id] = data.email;
+  });
+  return emails;
 };

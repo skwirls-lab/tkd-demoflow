@@ -52,6 +52,70 @@
   }
 }
 
+/* Delete/edit controls: always visible on touch screens (no hover there),
+   revealed on hover for mouse users. */
+@media (hover: hover) and (pointer: fine) {
+  .hover-reveal {
+    opacity: 0;
+    transition: opacity 150ms;
+  }
+  .group:hover .hover-reveal,
+  .group:focus-within .hover-reveal,
+  .hover-reveal:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* iPhone notch / home indicator (requires viewport-fit=cover) */
+.safe-top {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-bottom-pad {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+/* Sub-headers stick just under the app header (4rem + notch). */
+.sticky-subheader {
+  position: sticky;
+  top: calc(4rem + env(safe-area-inset-top, 0px));
+}
+
+/* Phone in landscape: there's no vertical room for stacked sticky headers,
+   so let them scroll away and give the mat the screen. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app-header,
+  .sticky-subheader {
+    position: static;
+  }
+}
+
+/* Formation mat: a little taller on phones so dots stay readable. */
+.stage-mat {
+  aspect-ratio: 2 / 1;
+}
+@media (min-width: 768px) {
+  .stage-mat {
+    aspect-ratio: 3 / 1;
+  }
+}
+.stage-dot {
+  width: max(3.5%, 24px);
+  aspect-ratio: 1 / 1;
+}
+.stage-dot-label {
+  font-size: clamp(7px, 0.7vw, 12px);
+  line-height: 1;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
 /* Web Audio API visualizer canvas */
 .audio-visualizer {
   @apply w-full h-32 rounded-lg bg-belt-dark;

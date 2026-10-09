@@ -74,8 +74,10 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
       setPhotoUrl(url);
     } catch (error) {
       console.error("Failed to upload photo:", error);
+      alert("Photo upload failed. Try a different photo or check your connection.");
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -106,6 +108,7 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
       onClose();
     } catch (error) {
       console.error("Failed to save member:", error);
+      alert("Save failed. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -128,8 +131,11 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="card max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-black/70 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="card max-w-md w-full max-h-[92vh] overflow-y-auto rounded-b-none sm:rounded-xl safe-bottom-pad">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-belt-white">
             {member ? "Edit Member" : "Add Member"}
@@ -171,10 +177,11 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
 
         {/* Name */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-belt-white/80 mb-1">
+          <label htmlFor="member-name" className="block text-sm font-medium text-belt-white/80 mb-1">
             Name *
           </label>
           <input
+            id="member-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -225,10 +232,12 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
           <label className="block text-sm font-medium text-belt-white/80 mb-1">
             Status
           </label>
+          <p className="text-[11px] text-belt-white/40 mb-2">Inactive and graduated members are hidden from attendance and the formation designer.</p>
           <div className="flex gap-2">
             {(["active", "inactive", "graduated"] as const).map((s) => (
               <button
                 key={s}
+                type="button"
                 onClick={() => setStatus(s)}
                 className={`flex-1 py-3 rounded-lg text-sm font-medium transition-colors touch-target ${
                   status === s

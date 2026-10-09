@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { ReactNode } from "react";
@@ -10,6 +10,9 @@ import Image from "next/image";
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  // The live screen has its own bottom control bar, so the nav steps aside.
+  const hideNav = pathname.startsWith("/stage/live");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -52,8 +55,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-belt-black pb-20">
-      <header className="sticky top-0 z-40 bg-belt-black/80 backdrop-blur-md border-b border-belt-gray/50 px-6 py-4">
+    <div className={`min-h-screen bg-belt-black ${hideNav ? "" : "pb-20"}`}>
+      <header className="app-header sticky top-0 z-40 bg-belt-black/80 backdrop-blur-md border-b border-belt-gray/50 px-4 md:px-6 pb-4 safe-top">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative w-8 h-8">
@@ -67,16 +70,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <span className="font-black text-lg tracking-tight text-belt-white uppercase">TKD DemoFlow</span>
           </div>
           {user && (
-            <div className="text-[10px] text-belt-gold font-bold uppercase tracking-widest bg-belt-gray px-2 py-1 rounded">
-              Demo Leader
-            </div>
+            <button
+              onClick={() => {
+                if (confirm(`Sign out of ${user.email}?`)) signOut();
+              }}
+              className="text-[11px] text-belt-white/50 hover:text-belt-white font-bold uppercase tracking-widest bg-belt-gray px-3 h-9 rounded-lg"
+            >
+              Sign out
+            </button>
           )}
         </div>
       </header>
       <main>
         {children}
       </main>
-      <Navbar />
+      {!hideNav && <Navbar />}
     </div>
   );
 }

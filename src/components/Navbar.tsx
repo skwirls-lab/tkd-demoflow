@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { href: "/roster", label: "Roster", icon: "👥" },
@@ -12,10 +11,9 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { userData, signOut } = useAuth();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-belt-dark/95 backdrop-blur-sm border-t border-gray-800 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-belt-dark/95 backdrop-blur-sm border-t border-gray-800 z-50 safe-bottom">
       <div className="flex items-center justify-around max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive =
@@ -24,7 +22,7 @@ export default function Navbar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center py-3 px-4 min-h-[48px] transition-colors ${
+              className={`flex flex-1 flex-col items-center py-3 px-4 min-h-[56px] transition-colors ${
                 isActive
                   ? "text-belt-red"
                   : "text-belt-white/60 hover:text-belt-white"
@@ -38,15 +36,6 @@ export default function Navbar() {
             </Link>
           );
         })}
-
-        <button
-          onClick={signOut}
-          className="flex flex-col items-center py-3 px-4 min-h-[48px] text-belt-white/60 hover:text-red-400 transition-colors"
-          aria-label="Sign Out"
-        >
-          <span className="text-xl mb-1">🚪</span>
-          <span className="text-xs font-medium">Exit</span>
-        </button>
       </div>
     </nav>
   );
